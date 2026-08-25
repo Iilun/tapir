@@ -6,6 +6,22 @@ paths:
   /books:
     post:
       operationId: createBook
+      parameters:
+        # required, no default -- the control case
+        - in: query
+          required: true
+          name: required
+          description: A query param required
+          schema:
+            type: string
+        # optional with a default -- generated as a plain String with a scala default
+        - in: query
+          required: false
+          name: optional-default
+          description: A query param optional with a default value
+          schema:
+            type: string
+            default: some query param
       requestBody:
         required: true
         content:
@@ -15,6 +31,18 @@ paths:
       responses:
         '200':
           description: ''
+          # echo the decoded query params back, so a test can read what the server saw
+          headers:
+            x-required:
+              description: The value decoded for the required query param
+              required: true
+              schema:
+                type: string
+            x-optional-default:
+              description: The value decoded for the optional-default query param
+              required: true
+              schema:
+                type: string
           content:
             application/json:
               schema:

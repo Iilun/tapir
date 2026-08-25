@@ -1,0 +1,12 @@
+package sttp.tapir.generated
+
+object TapirGeneratedEndpointsJsonSerdes {
+  import sttp.tapir.generated.TapirGeneratedEndpoints._
+  import sttp.tapir.generic.auto._
+  implicit lazy val byteStringJsonCodec: zio.json.JsonCodec[ByteString] = zio.json.JsonCodec[ByteString](
+    zio.json.JsonEncoder[String].contramap[ByteString](java.util.Base64.getEncoder.encodeToString),
+    zio.json.JsonDecoder[String].mapOrFail(s => scala.util.Try(java.util.Base64.getDecoder.decode(s)).toEither.map(toByteString).left.map(error => error.getMessage)),
+  )
+  implicit lazy val bookJsonDecoder: zio.json.JsonDecoder[Book] = zio.json.DeriveJsonDecoder.gen[Book]
+  implicit lazy val bookJsonEncoder: zio.json.JsonEncoder[Book] = zio.json.DeriveJsonEncoder.gen[Book]
+}

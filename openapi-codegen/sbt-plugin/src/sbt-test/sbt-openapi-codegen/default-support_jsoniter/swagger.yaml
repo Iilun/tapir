@@ -1,0 +1,98 @@
+openapi: 3.1.0
+info:
+  title: My Bookshop
+  version: '1.0'
+paths:
+  /books:
+    post:
+      operationId: createBook
+      parameters:
+        # required, no default -- the control case
+        - in: query
+          required: true
+          name: required
+          description: A query param required
+          schema:
+            type: string
+        # optional with a default -- generated as a plain String with a scala default
+        - in: query
+          required: false
+          name: optional-default
+          description: A query param optional with a default value
+          schema:
+            type: string
+            default: some query param
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+      responses:
+        '200':
+          description: ''
+          # echo the decoded query params back, so a test can read what the server saw
+          headers:
+            x-required:
+              description: The value decoded for the required query param
+              required: true
+              schema:
+                type: string
+            x-optional-default:
+              description: The value decoded for the optional-default query param
+              required: true
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    Book:
+      title: Book
+      required:
+      - title
+      - isbn
+      type: object
+      properties:
+        # required, no default -- the control case
+        title:
+          type: string
+        # optional with a default -- generated as a plain String with a scala default
+        description:
+          type: string
+          default: This is the default description
+        # nullable with a default -- stays an Option, so that an explicit null is distinguishable from an absent field
+        subtitle:
+          type:
+          - string
+          - 'null'
+          default: A default subtitle
+        # non-string defaults
+        pageCount:
+          type: integer
+          format: int32
+          default: 42
+        available:
+          type: boolean
+          default: true
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+        # a default that has to be escaped when emitted as a scala literal
+        quote:
+          type: string
+          default: 'He said "hi"'
+        # required *and* defaulted -- the scala default means an absent field still decodes
+        isbn:
+          type: string
+          default: unknown

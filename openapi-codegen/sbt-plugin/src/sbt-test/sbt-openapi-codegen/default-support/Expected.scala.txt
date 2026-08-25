@@ -74,15 +74,17 @@ object TapirGeneratedEndpoints {
 
 
 
-  type CreateBookEndpoint = Endpoint[Unit, Book, String, Book, Any]
+  type CreateBookEndpoint = Endpoint[Unit, (String, String, Book), String, (Book, String, String), Any]
   lazy val createBook: CreateBookEndpoint =
     endpoint
       .name("createBook")
       .post
       .in(("books"))
+      .in(query[String]("required").description("A query param required"))
+      .in(query[String]("optional-default").description("A query param optional with a default value").default("some query param"))
       .in(jsonBody[Book])
       .errorOut(stringBody.description("").and(statusCode(sttp.model.StatusCode(400))))
-      .out(jsonBody[Book].description(""))
+      .out(jsonBody[Book].description("").and(header[String]("x-required").description("The value decoded for the required query param")).and(header[String]("x-optional-default").description("The value decoded for the optional-default query param")))
   
   
   lazy val generatedEndpoints = List(createBook)
