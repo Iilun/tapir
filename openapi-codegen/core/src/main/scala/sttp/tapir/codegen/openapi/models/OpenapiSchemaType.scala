@@ -205,7 +205,14 @@ object OpenapiSchemaType {
       required: Seq[String],
       nullable: Boolean,
       xml: Option[OpenapiXml.XmlObjectConfiguration] = None
-  ) extends OpenapiSchemaType
+  ) extends OpenapiSchemaType {
+
+    /** A property is generated as non-optional if the schema lists it as required, or -- when generateDefaultsAsRequired is set -- if it
+      * declares a default, since decoding then always yields a value.
+      */
+    def fieldIsRequired(name: String, generateDefaultsAsRequired: Boolean): Boolean =
+      required.contains(name) || (generateDefaultsAsRequired && properties.get(name).flatMap(_.default).isDefined)
+  }
 
   // no readOnly/writeOnly support
   case class OpenapiSchemaMap(

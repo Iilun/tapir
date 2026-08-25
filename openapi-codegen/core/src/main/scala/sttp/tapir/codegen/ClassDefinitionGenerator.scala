@@ -85,7 +85,8 @@ class ClassDefinitionGenerator {
       useCustomJsoniterSerdes: Boolean = true,
       packageReuse: PackageReuseContext = PackageReuseContext.none,
       seperateFilesForModels: Boolean = false,
-      alwaysGenerateParamSupport: Boolean = false
+      alwaysGenerateParamSupport: Boolean = false,
+      generateDefaultsAsRequired: Boolean = false
   ): Option[GeneratedClassDefinitions] = {
     NameValidation.validateDocumentNames(doc, useHeadTagForObjectNames = false)
     val allSchemas: Map[String, OpenapiSchemaType] = doc.components.toSeq.flatMap(_.schemas).toMap
@@ -192,13 +193,15 @@ class ClassDefinitionGenerator {
       useCustomJsoniterSerdes,
       packageReuse,
       resolvableNonClassyOneOfSchemas,
-      seperateFilesForModels
+      seperateFilesForModels,
+      generateDefaultsAsRequired
     )
     val allTransitiveXmlParamRefs = fetchTransitiveParamRefs(
       xmlParamRefs,
       xmlParamRefs.toSeq.flatMap(ref => allSchemas.get(ref.stripPrefix("#/components/schemas/")))
     )
-    val xmlSerdes = XmlSerdeGenerator.generateSerdes(xmlSerdeLib, doc, allTransitiveXmlParamRefs, targetScala3, packageReuse)
+    val xmlSerdes =
+      XmlSerdeGenerator.generateSerdes(xmlSerdeLib, doc, allTransitiveXmlParamRefs, targetScala3, packageReuse, generateDefaultsAsRequired)
 
     def variantRefNames(oneOf: OpenapiSchemaOneOf): Set[String] =
       oneOf.types.collect { case r: OpenapiSchemaRef => r.stripped }.toSet
@@ -241,7 +244,8 @@ class ClassDefinitionGenerator {
                   isReusedSchema,
                   packageReuse,
                   seperateFilesForModels,
-                  alwaysGenerateParamSupport
+                  alwaysGenerateParamSupport,
+                  generateDefaultsAsRequired
                 )
               )
             )
@@ -326,7 +330,8 @@ class ClassDefinitionGenerator {
                 isReused,
                 packageReuse,
                 seperateFilesForModels,
-                alwaysGenerateParamSupport
+                alwaysGenerateParamSupport,
+                generateDefaultsAsRequired
               ).mkString("\n")
             }
           }
@@ -426,7 +431,8 @@ class ClassDefinitionGenerator {
       isReused: Boolean,
       packageReuse: PackageReuseContext,
       seperateFilesForModels: Boolean,
-      alwaysGenerateParamSupport: Boolean
+      alwaysGenerateParamSupport: Boolean,
+      generateDefaultsAsRequired: Boolean
   ): Seq[String] = try {
     val isJson = jsonParamRefs contains name
     def rec(className: String, schemaKey: String, obj: OpenapiSchemaObject, acc: List[String]): Seq[String] = {
@@ -473,10 +479,10 @@ class ClassDefinitionGenerator {
       val (properties, maybeEnums) = obj.properties.toSeq
         .filterNot(discriminatorDefFields.map(_._1) contains _._1)
         .map { case (key, OpenapiSchemaField(schemaType, maybeDefault, _)) =>
+          val optional = schemaType.nullable || !obj.fieldIsRequired(key, generateDefaultsAsRequired)
           val (tpe, maybeEnum) =
-            mapSchemaTypeToType(className, key, obj.required.contains(key), schemaType, isJson, jsonSerdeLib, targetScala3)
+            mapSchemaTypeToType(className, key, !optional, schemaType, isJson, jsonSerdeLib, targetScala3)
           val fixedKey = safeVariableName(key)
-          val optional = schemaType.nullable || !obj.required.contains(key)
           val maybeExplicitDefault =
             maybeDefault.map(
               " = " +

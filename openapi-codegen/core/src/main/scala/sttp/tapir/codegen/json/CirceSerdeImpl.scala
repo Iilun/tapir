@@ -34,7 +34,8 @@ object CirceSerdeImpl {
       allTransitiveJsonParamRefs: Set[String],
       validateNonDiscriminatedOneOfs: Boolean,
       packageReuse: PackageReuseContext,
-      seperateFilesForModels: Boolean
+      seperateFilesForModels: Boolean,
+      generateDefaultsAsRequired: Boolean
   ): SerdeGenResponse = {
     val docSchemas = doc.components.toSeq.flatMap(_.schemas).map { case (n, t) => (n, t, allTransitiveJsonParamRefs.contains(n)) }
     val pathSchemas = inlineEndpointSchemas(doc)
@@ -57,6 +58,13 @@ object CirceSerdeImpl {
       s"""implicit lazy val $decoderName: io.circe.Decoder[$name] = enumeratum.Circe.decoder($companion)
          |implicit lazy val $encoderName: io.circe.Encoder[$name] = enumeratum.Circe.encoder($companion)"""
     }
+    // the configured derivation used when generateDefaultsAsRequired is set needs a Configuration in scope that opts
+    // into reading scala default values for absent fields
+    val defaultsConfiguration =
+      if (!generateDefaultsAsRequired) ""
+      else
+        "implicit val defaultsConfig: io.circe.generic.extras.Configuration = " +
+          "io.circe.generic.extras.Configuration.default.withDefaults\n"
     val serdesDefn = (docSchemas ++ pathSchemas)
       .flatMap {
         // Reused enums are aliased; generate codecs here when referenced in json but wasn't 'before'
@@ -66,11 +74,15 @@ object CirceSerdeImpl {
         case (_, _: OpenapiSchemaEnum, _) => None
         // We generate the serde if it's referenced in any json model
         case (name, schema: OpenapiSchemaObject, true) =>
-          circeParentImpl(name) orElse Some(genCirceObjectSerde(name, schema))
+          circeParentImpl(name) orElse Some(genCirceObjectSerde(name, schema, generateDefaultsAsRequired))
         case (name, schema: OpenapiSchemaMap, true) =>
-          genCirceMapOrArraySerde(name, schema.items).map { case (n, impl) => circeParentImpl(n).getOrElse(impl) }
+          genCirceMapOrArraySerde(name, schema.items, generateDefaultsAsRequired).map { case (n, impl) =>
+            circeParentImpl(n).getOrElse(impl)
+          }
         case (name, schema: OpenapiSchemaArray, true) =>
-          genCirceMapOrArraySerde(name, schema.items).map { case (n, impl) => circeParentImpl(n).getOrElse(impl) }
+          genCirceMapOrArraySerde(name, schema.items, generateDefaultsAsRequired).map { case (n, impl) =>
+            circeParentImpl(n).getOrElse(impl)
+          }
         case (name, schema: OpenapiSchemaOneOf, true) =>
           circeParentImpl(name) orElse Some(
             if (schema.types.exists(!_.isInstanceOf[OpenapiSchemaRef]))
@@ -101,30 +113,40 @@ object CirceSerdeImpl {
                    |implicit val byteStringJsonEncoder: io.circe.Encoder[ByteString] =
                    |  io.circe.Encoder.encodeString
                    |    .contramap(java.util.Base64.getEncoder.encodeToString)
-                   |$s""".stripMargin)
+                   |$defaultsConfiguration$s""".stripMargin)
     SerdeGenResponse(serdesDefn, Nil)
   }
 
-  private def genCirceObjectSerde(name: String, schema: OpenapiSchemaObject): String = {
+  private def genCirceObjectSerde(name: String, schema: OpenapiSchemaObject, generateDefaultsAsRequired: Boolean): String = {
     val subs = schema.properties.collect {
-      case (k, OpenapiSchemaField(`type`: OpenapiSchemaObject, _, _)) => genCirceObjectSerde(s"$name${k.capitalize}", `type`)
+      case (k, OpenapiSchemaField(`type`: OpenapiSchemaObject, _, _)) =>
+        genCirceObjectSerde(s"$name${k.capitalize}", `type`, generateDefaultsAsRequired)
       case (k, OpenapiSchemaField(OpenapiSchemaArray(`type`: OpenapiSchemaObject, _, _, _), _, _)) =>
-        genCirceObjectSerde(s"$name${k.capitalize}Item", `type`)
+        genCirceObjectSerde(s"$name${k.capitalize}Item", `type`, generateDefaultsAsRequired)
       case (k, OpenapiSchemaField(OpenapiSchemaMap(`type`: OpenapiSchemaObject, _, _), _, _)) =>
-        genCirceObjectSerde(s"$name${k.capitalize}Item", `type`)
+        genCirceObjectSerde(s"$name${k.capitalize}Item", `type`, generateDefaultsAsRequired)
     } match {
       case s if s.isEmpty => ""
       case s              => s.mkString("", "\n", "\n")
     }
     val uncapitalisedName = uncapitalise(name)
-    s"""${subs}implicit lazy val ${uncapitalisedName}JsonDecoder: io.circe.Decoder[$name] = io.circe.generic.semiauto.deriveDecoder[$name]
+    // fields defaulted in the scala model are only populated from their default on decode if the derivation is
+    // configured to use defaults, which requires the circe-generic-extras derivation
+    val decoder =
+      if (generateDefaultsAsRequired) s"io.circe.generic.extras.semiauto.deriveConfiguredDecoder[$name]"
+      else s"io.circe.generic.semiauto.deriveDecoder[$name]"
+    s"""${subs}implicit lazy val ${uncapitalisedName}JsonDecoder: io.circe.Decoder[$name] = $decoder
        |implicit lazy val ${uncapitalisedName}JsonEncoder: io.circe.Encoder[$name] = io.circe.generic.semiauto.deriveEncoder[$name]""".stripMargin
   }
-  private def genCirceMapOrArraySerde(name: String, schema: OpenapiSchemaType): Option[(String, String)] = {
+  private def genCirceMapOrArraySerde(
+      name: String,
+      schema: OpenapiSchemaType,
+      generateDefaultsAsRequired: Boolean
+  ): Option[(String, String)] = {
     schema match {
       case `type`: OpenapiSchemaObject =>
         val inlineItemName = s"${name}ObjectsItem"
-        Some(inlineItemName -> ("\n" + genCirceObjectSerde(inlineItemName, `type`)))
+        Some(inlineItemName -> ("\n" + genCirceObjectSerde(inlineItemName, `type`, generateDefaultsAsRequired)))
       case _ => None
     }
   }

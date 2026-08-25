@@ -19,7 +19,8 @@ case class OpenApiConfiguration(
     packageDependencies: Map[String, String],
     seperateFilesForModels: Boolean,
     alwaysGenerateParamSupport: Boolean,
-    addDisambiguationCodes: Boolean
+    addDisambiguationCodes: Boolean,
+    generateDefaultsAsRequired: Boolean
 )
 
 trait OpenapiCodegenKeys {
@@ -49,6 +50,9 @@ trait OpenapiCodegenKeys {
     settingKey[Boolean]("Set to true to always generate param support for enums. Useful for openapi dedup.")
   lazy val openapiAddDisambiguationCodes =
     settingKey[Boolean]("When true, responses will be a tuple of (T, StatusCode) rather than a T where they would otherwise be ambiguous")
+  lazy val openapiGenerateDefaultsAsRequired = settingKey[Boolean](
+    "When true, schema properties that declare a default value are generated as required fields of their underlying type (with the default as a scala default argument), rather than being wrapped in an Option. With the circe json serde lib this requires a circe-generic-extras dependency."
+  )
   lazy val openapiOpenApiConfiguration =
     settingKey[OpenApiConfiguration]("Aggregation of other settings. Manually set value will be disregarded.")
 

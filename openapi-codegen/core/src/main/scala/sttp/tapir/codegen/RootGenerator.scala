@@ -37,6 +37,7 @@ object RootGenerator {
       packageReuse: PackageReuseContext,
       seperateFilesForModels: Boolean,
       alwaysGenerateParamSupport: Boolean,
+      generateDefaultsAsRequired: Boolean = false,
       addDisambiguationCodes: Boolean = true
   ): GenerationInfo = {
     val doc = unNormalisedDoc.resolveAllOfSchemas
@@ -126,7 +127,8 @@ object RootGenerator {
           useCustomJsoniterSerdes = useCustomJsoniterSerdes,
           packageReuse = packageReuse,
           seperateFilesForModels = seperateFilesForModels,
-          alwaysGenerateParamSupport = alwaysGenerateParamSupport
+          alwaysGenerateParamSupport = alwaysGenerateParamSupport,
+          generateDefaultsAsRequired = generateDefaultsAsRequired
         )
         .getOrElse(GeneratedClassDefinitions(Map.empty, None, Nil, None, false, Nil, Set.empty))
 

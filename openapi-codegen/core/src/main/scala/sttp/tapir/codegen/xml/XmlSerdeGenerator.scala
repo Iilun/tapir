@@ -66,7 +66,8 @@ object XmlSerdeGenerator {
       doc: OpenapiDocument,
       xmlParamRefs: Set[String],
       targetScala3: Boolean,
-      packageReuse: PackageReuseContext = PackageReuseContext.none
+      packageReuse: PackageReuseContext = PackageReuseContext.none,
+      generateDefaultsAsRequired: Boolean = false
   ): Option[String] = {
     if (xmlParamRefs.isEmpty || xmlSerdeLib == XmlSerdeLib.NoSupport) None
     else
@@ -85,7 +86,9 @@ object XmlSerdeGenerator {
               val mappedArraysOfSimpleSchemas: Seq[ScopedAuxCodecParams] =
                 doc.components.toSeq
                   .flatMap(_.schemas.get(ref).map(ref -> _))
-                  .collect { case (ref, OpenapiSchemaObject(props, required, _, _)) => props.map(p => (ref, p, required.contains(p._1))) }
+                  .collect { case (ref, obj: OpenapiSchemaObject) =>
+                    obj.properties.map(p => (ref, p, obj.fieldIsRequired(p._1, generateDefaultsAsRequired)))
+                  }
                   .flatMap {
                     _.collect {
                       case (_, (n, OpenapiSchemaField(t: OpenapiSchemaRef, _, _)), r)

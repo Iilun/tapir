@@ -51,7 +51,8 @@ object JsonSerdeGenerator {
       useCustomJsoniterSerdes: Boolean,
       packageReuse: PackageReuseContext,
       resolvableNonClassyOneOfSchemas: Seq[(String, OpenapiSchemaOneOf)],
-      seperateFilesForModels: Boolean
+      seperateFilesForModels: Boolean,
+      generateDefaultsAsRequired: Boolean
   ): SerdeGenResponse = {
     val allSchemas: Map[String, OpenapiSchemaType] = doc.components.toSeq.flatMap(_.schemas).toMap
 
@@ -63,7 +64,8 @@ object JsonSerdeGenerator {
           allTransitiveJsonParamRefs,
           validateNonDiscriminatedOneOfs,
           packageReuse,
-          seperateFilesForModels
+          seperateFilesForModels,
+          generateDefaultsAsRequired
         )
       case JsonSerdeLib.Jsoniter =>
         JsoniterSerdeImpl.genJsoniterSerdes(
