@@ -1,0 +1,49 @@
+lazy val root = (project in file("."))
+  .enablePlugins(OpenapiCodegenPlugin)
+  .settings(
+    scalaVersion := "2.13.18",
+    version := "0.1",
+    openapiJsonSerdeLib := "jsoniter",
+    openapiGenerateEndpointTypes := true,
+    openapiGenerateDefaultsAsRequired := true
+  )
+
+val jsoniterScalaVersion = "2.40.1"
+val tapirVersion = "1.13.13"
+libraryDependencies ++= Seq(
+  "com.softwaremill.sttp.tapir" %% "tapir-jsoniter-scala" % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs" % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-pekko-http-server" % tapirVersion,
+  "com.softwaremill.sttp.tapir" %% "tapir-sttp-client" % tapirVersion,
+  "com.softwaremill.sttp.apispec" %% "openapi-circe-yaml" % "0.11.10",
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-core" % jsoniterScalaVersion,
+  "com.github.plokhotnyuk.jsoniter-scala" %% "jsoniter-scala-macros" % jsoniterScalaVersion % "compile-internal",
+  // only used by the test, to normalise json before comparing it
+  "io.circe" %% "circe-parser" % "0.14.16" % Test,
+  "org.scalatest" %% "scalatest" % "3.2.20" % Test,
+  "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % tapirVersion % Test
+)
+
+import scala.io.Source
+import scala.util.Using
+
+TaskKey[Unit]("check") := {
+  def check(generatedFileName: String, expectedFileName: String) = {
+    val generatedCode =
+      Using(Source.fromFile(s"${sourceManaged.value}/main/sbt-openapi-codegen/$generatedFileName"))(_.getLines.mkString("\n")).get
+    val expectedCode = Using(Source.fromFile(expectedFileName))(_.getLines.mkString("\n")).get
+    val generatedTrimmed =
+      generatedCode.linesIterator.zipWithIndex.filterNot(_._1.isBlank).map { case (a, i) => a.trim -> i }.toSeq
+    val expectedTrimmed = expectedCode.linesIterator.filterNot(_.isBlank).map(_.trim).toSeq
+    generatedTrimmed.zip(expectedTrimmed).foreach { case ((a, i), b) =>
+      if (a != b) sys.error(s"Generated code in file $generatedCode did not match (expected '$b' on line $i, found '$a')")
+    }
+    if (generatedTrimmed.size != expectedTrimmed.size)
+      sys.error(s"expected ${expectedTrimmed.size} non-empty lines in ${generatedFileName}, found ${generatedTrimmed.size}")
+  }
+  Seq(
+    "TapirGeneratedEndpoints.scala" -> "Expected.scala.txt",
+    "TapirGeneratedEndpointsJsonSerdes.scala" -> "ExpectedJsonSerdes.scala.txt"
+  ).foreach { case (generated, expected) => check(generated, expected) }
+  ()
+}
