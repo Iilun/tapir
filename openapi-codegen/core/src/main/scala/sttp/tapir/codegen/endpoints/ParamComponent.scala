@@ -92,7 +92,8 @@ object ParamComponent {
       jsonSerdeLib: JsonSerdeLib,
       param: OpenapiParameter,
       doc: OpenapiDocument,
-      generateValidators: Boolean
+      generateValidators: Boolean,
+      generateDefaultsAsRequired: Boolean
   )(implicit
       location: Location
   ): (String, Option[Seq[String]], String) = {
@@ -100,7 +101,7 @@ object ParamComponent {
     param.schema.`type` match {
       case st: OpenapiSchemaSimpleType =>
         val (t, _) = mapSchemaSimpleTypeToType(st)
-        val required = param.required.getOrElse(false)
+        val required = param.isRequired(generateDefaultsAsRequired)
         val req = if (required) t else s"Option[$t]"
         val desc = param.description.map(JavaEscape.escapeString).fold("")(d => s""".description("$d")""")
         val defaultValue = st match {

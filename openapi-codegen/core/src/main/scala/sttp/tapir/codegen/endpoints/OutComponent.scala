@@ -64,7 +64,8 @@ object OutComponent {
       isReused: Boolean,
       packageReuse: PackageReuseContext,
       seperateFilesForModels: Boolean,
-      addDisambiguationCodes: Boolean
+      addDisambiguationCodes: Boolean,
+      generateDefaultsAsRequired: Boolean
   )(implicit location: Location) = {
     // .errorOut(stringBody)
     // .out(oneOfBody(jsonBody[List[Book]]))
@@ -220,7 +221,15 @@ object OutComponent {
         case Nil         => MappedOutGroup(None, None, None, Nil)
         case resp +: Nil =>
           val (outHeaderDefns, outHeaderInlineEnums, outHeaderTypes) = resp.getHeaders.map { case (name, defn) =>
-            ParamComponent.genParamDefn(endpointName, targetScala3, jsonSerdeLib, defn.resolved(name, doc).param, doc, generateValidators)
+            ParamComponent.genParamDefn(
+              endpointName,
+              targetScala3,
+              jsonSerdeLib,
+              defn.resolved(name, doc).param,
+              doc,
+              generateValidators,
+              generateDefaultsAsRequired
+            )
           }.unzip3
           val hs = outHeaderDefns.map(d => s".and($d)").mkString
 
@@ -301,7 +310,10 @@ object OutComponent {
             maybeHeaderTypeImpls,
             statusCodeDisambig
           ) =
-            headerDefns(targetScala3, jsonSerdeLib, doc, generateValidators, ambiguous, isErrorPosition)(endpointName, many)
+            headerDefns(targetScala3, jsonSerdeLib, doc, generateValidators, ambiguous, isErrorPosition, generateDefaultsAsRequired)(
+              endpointName,
+              many
+            )
 
           val noAmbiguity = noHeaders && !ambiguous
 
@@ -460,7 +472,8 @@ object OutComponent {
       doc: OpenapiDocument,
       generateValidators: Boolean,
       ambiguous: Boolean,
-      isErrorPosition: Boolean
+      isErrorPosition: Boolean,
+      generateDefaultsAsRequired: Boolean
   )(
       endpointName: String,
       many: Seq[OpenapiResponseDef]
@@ -472,7 +485,15 @@ object OutComponent {
         .map { case (name, defn) =>
           val param = defn.resolved(name, doc).param
           NameHelpers.safeVariableName(param.name) ->
-            ParamComponent.genParamDefn(endpointName, targetScala3, jsonSerdeLib, param, doc, generateValidators)
+            ParamComponent.genParamDefn(
+              endpointName,
+              targetScala3,
+              jsonSerdeLib,
+              param,
+              doc,
+              generateValidators,
+              generateDefaultsAsRequired
+            )
         }
         .toSeq
         .sortBy(_._1)

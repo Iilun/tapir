@@ -171,6 +171,12 @@ object OpenapiModels {
   ) {
     // default is true for query params, but headers must always be 'simple' style -- see https://swagger.io/docs/specification/serialization/
     def isExploded: Boolean = in != "header" && !explode.contains(false)
+
+    /** A parameter is generated as non-optional if the schema lists it as required, or -- when generateDefaultsAsRequired is set -- if it
+      * declares a default, since decoding then always yields a value.
+      */
+    def isRequired(generateDefaultsAsRequired: Boolean): Boolean =
+      required.getOrElse(false) || (generateDefaultsAsRequired && schema.default.isDefined)
   }
 
   sealed trait OpenapiHeader {

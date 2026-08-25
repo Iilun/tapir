@@ -87,7 +87,8 @@ class EndpointGeneratorSpec extends CompileCheckTestBase {
           generateValidators = true,
           packageReuse = PackageReuseContext.none,
           seperateFilesForModels = false,
-          addDisambiguationCodes = true
+          addDisambiguationCodes = true,
+          generateDefaultsAsRequired = false
         )
         .endpointDecls(None)
     generatedCode should include("val getTestAsdId =")
@@ -181,7 +182,8 @@ class EndpointGeneratorSpec extends CompileCheckTestBase {
           generateValidators = true,
           packageReuse = PackageReuseContext.none,
           seperateFilesForModels = false,
-          addDisambiguationCodes = true
+          addDisambiguationCodes = true,
+          generateDefaultsAsRequired = false
         )
         .endpointDecls(None)).shouldCompile()
   }
@@ -245,7 +247,8 @@ class EndpointGeneratorSpec extends CompileCheckTestBase {
           generateValidators = true,
           packageReuse = PackageReuseContext.none,
           seperateFilesForModels = false,
-          addDisambiguationCodes = true
+          addDisambiguationCodes = true,
+          generateDefaultsAsRequired = false
         )
         .endpointDecls(None)
     generatedCode should include(
@@ -445,7 +448,8 @@ class EndpointGeneratorSpec extends CompileCheckTestBase {
           generateValidators = true,
           packageReuse = PackageReuseContext.none,
           seperateFilesForModels = false,
-          addDisambiguationCodes = true
+          addDisambiguationCodes = true,
+          generateDefaultsAsRequired = false
         )
         .details
         .inlineDefns
@@ -514,7 +518,8 @@ class EndpointGeneratorSpec extends CompileCheckTestBase {
           generateValidators = true,
           packageReuse = PackageReuseContext.none,
           seperateFilesForModels = false,
-          addDisambiguationCodes = true
+          addDisambiguationCodes = true,
+          generateDefaultsAsRequired = false
         )
         .endpointDecls(None)
     generatedCode should include("""header[String]("X-Rate-Limit")""")

@@ -91,7 +91,8 @@ class EndpointGenerator {
       generateValidators: Boolean,
       packageReuse: PackageReuseContext,
       seperateFilesForModels: Boolean,
-      addDisambiguationCodes: Boolean
+      addDisambiguationCodes: Boolean,
+      generateDefaultsAsRequired: Boolean
   ): EndpointDefs = {
     val capabilities = capabilityImpl(streamingImplementation)
     val components = Option(doc.components).flatten
@@ -115,7 +116,8 @@ class EndpointGenerator {
             generateValidators,
             packageReuse,
             seperateFilesForModels,
-            addDisambiguationCodes
+            addDisambiguationCodes,
+            generateDefaultsAsRequired
           )
         )
         .foldLeft(GeneratedEndpoints(Nil, Set.empty, false, EndpointDetails.empty))(_ merge _)
@@ -166,7 +168,8 @@ class EndpointGenerator {
       generateValidators: Boolean,
       packageReuse: PackageReuseContext,
       seperateFilesForModels: Boolean,
-      addDisambiguationCodes: Boolean
+      addDisambiguationCodes: Boolean,
+      generateDefaultsAsRequired: Boolean
   )(p: OpenapiPath): GeneratedEndpoints = {
     val parameters = components.map(_.parameters).getOrElse(Map.empty)
     val securitySchemes = components.map(_.securitySchemes).getOrElse(Map.empty)
@@ -219,7 +222,8 @@ class EndpointGenerator {
               generateValidators,
               isReused,
               packageReuse,
-              seperateFilesForModels
+              seperateFilesForModels,
+              generateDefaultsAsRequired
             )
           val (outDecl, outTypes, errTypes, inlineDefns, statusCodeDisambig) =
             OutComponent.outs(
@@ -236,7 +240,8 @@ class EndpointGenerator {
               isReused,
               packageReuse,
               seperateFilesForModels,
-              addDisambiguationCodes
+              addDisambiguationCodes,
+              generateDefaultsAsRequired
             )
           val allTypes = EndpointTypes(
             maybeSecurityPath.toSeq.flatMap(_._2) ++ securityTypes.toSeq,

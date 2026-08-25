@@ -33,7 +33,8 @@ object InComponent {
       generateValidators: Boolean,
       isReused: Boolean,
       packageReuse: PackageReuseContext,
-      seperateFilesForModels: Boolean
+      seperateFilesForModels: Boolean,
+      generateDefaultsAsRequired: Boolean
   )(implicit location: Location): (String, Option[String], Seq[String], Option[String]) = {
 
     // .in(query[Limit]("limit").description("Maximum number of books to retrieve"))
@@ -41,7 +42,7 @@ object InComponent {
     val (params, maybeEnumDefns, inTypes) = parameters
       .filter(_.in != "path")
       .map { param =>
-        ParamComponent.genParamDefn(endpointName, targetScala3, jsonSerdeLib, param, doc, generateValidators)
+        ParamComponent.genParamDefn(endpointName, targetScala3, jsonSerdeLib, param, doc, generateValidators, generateDefaultsAsRequired)
       }
       .map { case (defn, enums, tpe) => (s".in($defn)", enums, tpe) }
       .unzip3

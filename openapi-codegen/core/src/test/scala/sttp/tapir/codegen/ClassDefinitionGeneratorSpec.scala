@@ -551,7 +551,8 @@ class ClassDefinitionGeneratorSpec extends CompileCheckTestBase {
             generateValidators = true,
             packageReuse = PackageReuseContext.none,
             seperateFilesForModels = false,
-            addDisambiguationCodes = true
+            addDisambiguationCodes = true,
+            generateDefaultsAsRequired = false
           )
           .endpointDecls(None)
     }

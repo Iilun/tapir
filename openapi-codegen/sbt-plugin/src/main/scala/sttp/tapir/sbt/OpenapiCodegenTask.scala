@@ -29,7 +29,8 @@ case class OpenapiCodegenTask(
     packageReuse: PackageReuseContext = PackageReuseContext.none,
     seperateFilesForModels: Boolean = false,
     alwaysGenerateParamSupport: Boolean,
-    addDisambiguationCodes: Boolean = true
+    addDisambiguationCodes: Boolean = true,
+    generateDefaultsAsRequired: Boolean = false
 ) {
 
   private val directoryName: String = overrideDirectoryName.getOrElse("sbt-openapi-codegen")
@@ -59,6 +60,7 @@ case class OpenapiCodegenTask(
         packageReuse,
         seperateFilesForModels,
         alwaysGenerateParamSupport,
+        generateDefaultsAsRequired,
         addDisambiguationCodes
       )
     Await.result(

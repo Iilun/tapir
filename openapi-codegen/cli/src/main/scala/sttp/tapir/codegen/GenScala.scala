@@ -83,6 +83,14 @@ object GenScala {
       )
       .orFalse
 
+  private val generateDefaultsAsRequiredOpt: Opts[Boolean] =
+    Opts
+      .flag(
+        "generateDefaultsAsRequired",
+        "Set to true to generate schema properties that declare a default value as required fields of their underlying type, rather than as an Option"
+      )
+      .orFalse
+
   private val destDirOpt: Opts[File] =
     Opts
       .option[String]("destdir", "Destination directory", "d")
@@ -110,7 +118,8 @@ object GenScala {
       streamingImplementationOpt,
       generateEndpointTypesOpt,
       disableValidatorGenerationOpt,
-      useCustomJsoniterSerdesOpt
+      useCustomJsoniterSerdesOpt,
+      generateDefaultsAsRequiredOpt
     )
       .mapN {
         case (
@@ -127,7 +136,8 @@ object GenScala {
               streamingImplementation,
               generateEndpointTypes,
               disableValidatorGeneration,
-              useCustomJsoniterSerdes
+              useCustomJsoniterSerdes,
+              generateDefaultsAsRequired
             ) =>
           val objectName = maybeObjectName.getOrElse(DefaultObjectName)
 
@@ -149,7 +159,8 @@ object GenScala {
                 useCustomJsoniterSerdes,
                 PackageReuseContext.none,
                 false,
-                false
+                false,
+                generateDefaultsAsRequired
               )
             )
             destFiles <- contents.allFiles.toVector.traverse { case (fileName, content) => writeGeneratedFile(destDir, fileName, content) }

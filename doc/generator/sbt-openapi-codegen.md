@@ -60,6 +60,9 @@ openapiSeperateFilesForModels         false                                When 
 openapiAlwaysGenerateParamSupport     false                                When true, all enums will be generated with param & json support, even if not used in those positions. This is useful for definitions that will be reused with `openapiPackageDependencies`
 openapiAddDisambiguationCodes         false                                When true, if multiple status codes in same group (i.e. all error, or all success) return the same schema, they will be paired with a status code object as (T, StatusCode).
                                                                            'Default' codes will map to an additional StatusCode output. When false, the type will remain a T and default codes will be treated as 400s.
+openapiGenerateDefaultsAsRequired     false                                When true, schema properties that declare a `default` are generated as required fields of their underlying type, with the default as a scala default argument, rather than
+                                                                           being wrapped in an `Option`. Decoding an absent field then yields the default rather than `None`. With openapiJsonSerdeLib = circe this requires an additional
+                                                                           `circe-generic-extras` dependency.
 ===================================== ==================================== ==================================================================================================
 ```
 
